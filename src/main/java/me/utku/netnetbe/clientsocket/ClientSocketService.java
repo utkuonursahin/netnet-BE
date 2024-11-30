@@ -29,4 +29,8 @@ public class ClientSocketService {
     public DataListener<AgentDto> onRealtimeDataRequest() {
         return (client, data, ackSender) -> agentSocketService.handleRealtimeDataRequest(data.hardwareId(), client);
     }
+
+    public DataListener<AgentDto> onRealtimeDataStopRequest() {
+        return (client, data, ackSender) -> agentSocketService.handleRealtimeDataStopRequest(data.hardwareId());
+    }
 }

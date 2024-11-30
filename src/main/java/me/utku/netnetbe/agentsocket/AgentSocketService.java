@@ -3,6 +3,8 @@ package me.utku.netnetbe.agentsocket;
 import com.corundumstudio.socketio.SocketIOClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.utku.netnetbe.enums.AgentEvent;
+import me.utku.netnetbe.enums.ClientEvent;
 import me.utku.netnetbe.service.AgentService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -40,7 +43,7 @@ public class AgentSocketService {
     private void handleAgentConnection(Socket agentSocket) {
         try {
             InputStream input = agentSocket.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
 
             OutputStream output = agentSocket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
@@ -60,15 +63,26 @@ public class AgentSocketService {
             OutputStream output = agentSocket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
 
-            writer.println("startStream");
+            writer.println(AgentEvent.START_STREAM.getEvent());
 
             String line;
             while ((line = reader.readLine()) != null) {
                 Map<String, String> response = processAgentRealtimeData(line);
-                client.getNamespace().getBroadcastOperations().sendEvent("RECEIVE_REALTIME_DATA", response);
+                client.getNamespace().getBroadcastOperations().sendEvent(ClientEvent.RECEIVE_REALTIME_DATA.name(), response);
             }
         } catch (IOException e) {
             log.error("Error requesting realtime data: {}", e.getMessage());
+        }
+    }
+
+    public void handleRealtimeDataStopRequest(String hardwareId) {
+        Socket agentSocket = agentConnections.getAgentConnection(hardwareId);
+        try {
+            OutputStream output = agentSocket.getOutputStream();
+            PrintWriter writer = new PrintWriter(output, true);
+            writer.println(AgentEvent.STOP_STREAM.getEvent());
+        } catch (IOException e) {
+            log.error("Error stopping realtime data: {}", e.getMessage());
         }
     }
 
@@ -107,28 +121,5 @@ public class AgentSocketService {
             }
         }
         return data;
-    }
-
-    private void closeConnection(Socket agentSocket) {
-        try {
-            String agentId = agentSocket.getInetAddress().getHostAddress();
-            agentConnections.removeAgentConnection(agentId);
-            agentSocket.close();
-            log.info("Connection closed for agent: {}", agentId);
-        } catch (IOException e) {
-            log.error("Error closing agent connection: {}", e.getMessage());
-        }
-    }
-
-    public void stop() {
-        try {
-            executor.shutdownNow();
-            for (Socket socket : agentConnections.getAllAgentConnections()) {
-                socket.close();
-            }
-            log.info("Agent server stopped.");
-        } catch (IOException e) {
-            log.error("Error stopping the agent server: {}", e.getMessage());
-        }
     }
 }
