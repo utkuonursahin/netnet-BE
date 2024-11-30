@@ -12,7 +12,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -41,7 +40,7 @@ public class AgentSocketService {
     private void handleAgentConnection(Socket agentSocket) {
         try {
             InputStream input = agentSocket.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(input));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(input, "UTF-8"));
 
             OutputStream output = agentSocket.getOutputStream();
             PrintWriter writer = new PrintWriter(output, true);
@@ -50,13 +49,11 @@ public class AgentSocketService {
             writer.println(response);
         } catch (IOException e) {
             log.error("Error handling agent connection: {}", e.getMessage());
-        } finally {
-            closeConnection(agentSocket);
         }
     }
 
-    public void handleRealtimeDataRequest(UUID hardwareId, SocketIOClient client) {
-        Socket agentSocket = agentConnections.getAgentConnection(hardwareId.toString());
+    public void handleRealtimeDataRequest(String hardwareId, SocketIOClient client) {
+        Socket agentSocket = agentConnections.getAgentConnection(hardwareId);
         try {
             InputStream input = agentSocket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));

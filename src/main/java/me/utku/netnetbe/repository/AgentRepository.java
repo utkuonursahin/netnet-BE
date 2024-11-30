@@ -7,5 +7,5 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface AgentRepository extends JpaRepository<Agent, UUID> {
-    Optional<Agent> findByHardwareId(UUID hardwareId);
+    Optional<Agent> findByHardwareId(String hardwareId);
 }
