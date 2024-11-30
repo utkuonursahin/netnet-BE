@@ -12,12 +12,6 @@ public class Agent extends BaseEntity {
     private String name;
     @Column(unique = true)
     private String hardwareId;
-
-    public Agent(String name, String hardwareId) {
-        this.name = name;
-        this.hardwareId = hardwareId;
-    }
-
-    public Agent() {
-    }
+    private int cpuCores;
+    private int ram;
 }
