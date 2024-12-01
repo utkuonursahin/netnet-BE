@@ -5,6 +5,7 @@ import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import me.utku.netnetbe.agentsocket.AgentExecutorService;
 import me.utku.netnetbe.agentsocket.AgentSocketService;
 import me.utku.netnetbe.dto.AgentDto;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ClientSocketService {
     private final AgentSocketService agentSocketService;
+    private final AgentExecutorService agentExecutorService;
 
     public ConnectListener onSocketConnection() {
         return client -> log.info(String.format("SockedID: %s connected", client.getSessionId().toString()));
@@ -27,10 +29,10 @@ public class ClientSocketService {
     }
 
     public DataListener<AgentDto> onRealtimeDataRequest() {
-        return (client, data, ackSender) -> agentSocketService.handleRealtimeDataRequest(data.hardwareId(), client);
+        return (client, data, ackSender) -> agentExecutorService.execute(() -> agentSocketService.handleRealtimeDataRequest(data.hardwareId(), client));
     }
 
     public DataListener<AgentDto> onRealtimeDataStopRequest() {
-        return (client, data, ackSender) -> agentSocketService.handleRealtimeDataStopRequest(data.hardwareId());
+        return (client, data, ackSender) -> agentExecutorService.execute(() -> agentSocketService.handleRealtimeDataStopRequest(data.hardwareId()));
     }
 }

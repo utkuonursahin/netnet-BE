@@ -15,15 +15,13 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class AgentSocketService {
     private final AgentConnectionTracker agentConnections;
-    private final ExecutorService executor = Executors.newCachedThreadPool(Thread.ofVirtual().factory());
+    private final AgentExecutorService executor;
     private final AgentService agentService;
     @Value("${spring.application.agent_socket.port}")
     private int port;
@@ -61,9 +59,10 @@ public class AgentSocketService {
             InputStream input = agentSocket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input));
             OutputStream output = agentSocket.getOutputStream();
-            PrintWriter writer = new PrintWriter(output, true);
+            OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
 
-            writer.println(AgentEvent.START_STREAM.getEvent());
+            writer.write(AgentEvent.START_STREAM.getEvent());
+            writer.flush();
 
             String line;
             while ((line = reader.readLine()) != null) {
@@ -79,8 +78,9 @@ public class AgentSocketService {
         Socket agentSocket = agentConnections.getAgentConnection(hardwareId);
         try {
             OutputStream output = agentSocket.getOutputStream();
-            PrintWriter writer = new PrintWriter(output, true);
-            writer.println(AgentEvent.STOP_STREAM.getEvent());
+            OutputStreamWriter writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
+            writer.write(AgentEvent.STOP_STREAM.getEvent());
+            writer.flush();
         } catch (IOException e) {
             log.error("Error stopping realtime data: {}", e.getMessage());
         }
